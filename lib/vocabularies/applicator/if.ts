@@ -6,7 +6,8 @@ import type {
 } from "../../types"
 import type {SchemaObjCxt} from "../../compile"
 import type {KeywordCxt} from "../../compile/validate"
-import {_, str, not, Name} from "../../compile/codegen"
+import {_, str, not, Name, strConcat} from "../../compile/codegen"
+import N from "../../compile/names"
 import {alwaysValidSchema, checkStrictMode} from "../../compile/util"
 
 export type IfKeywordError = ErrorObject<"if", {failingKeyword: string}, AnySchema>
@@ -34,6 +35,15 @@ const def: CodeKeywordDefinition = {
     const schValid = gen.name("_valid")
     validateIf()
     cxt.reset()
+
+    if (it.opts.traceIf) {
+      gen.code(
+        _`${N.trace}.push({schemaPath: ${str`${it.errSchemaPath}/if`}, instancePath: ${strConcat(
+          N.instancePath,
+          it.errorPath
+        )}, result: ${schValid}, branch: ${schValid} ? "then" : "else"})`
+      )
+    }
 
     if (hasThen && hasElse) {
       const ifClause = gen.let("ifClause")

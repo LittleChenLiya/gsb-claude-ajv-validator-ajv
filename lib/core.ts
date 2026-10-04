@@ -140,6 +140,8 @@ export interface CurrentOptions {
   messages?: boolean
   code?: CodeOptions // NEW
   uriResolver?: UriResolver
+  // collect explicit trace entries for if/then/else conditions during validation
+  traceIf?: boolean
 }
 
 export interface CodeOptions {

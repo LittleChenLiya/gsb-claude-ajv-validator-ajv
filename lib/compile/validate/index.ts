@@ -66,7 +66,7 @@ function validateFunction(
 function destructureValCxt(opts: InstanceOptions): Code {
   return _`{${N.instancePath}="", ${N.parentData}, ${N.parentDataProperty}, ${N.rootData}=${
     N.data
-  }${opts.dynamicRef ? _`, ${N.dynamicAnchors}={}` : nil}}={}`
+  }${opts.dynamicRef ? _`, ${N.dynamicAnchors}={}` : nil}${opts.traceIf ? _`, ${N.trace}=[]` : nil}}={}`
 }
 
 function destructureValCxtES5(gen: CodeGen, opts: InstanceOptions): void {
@@ -78,6 +78,7 @@ function destructureValCxtES5(gen: CodeGen, opts: InstanceOptions): void {
       gen.var(N.parentDataProperty, _`${N.valCxt}.${N.parentDataProperty}`)
       gen.var(N.rootData, _`${N.valCxt}.${N.rootData}`)
       if (opts.dynamicRef) gen.var(N.dynamicAnchors, _`${N.valCxt}.${N.dynamicAnchors}`)
+      if (opts.traceIf) gen.var(N.trace, _`${N.valCxt}.${N.trace} || []`)
     },
     () => {
       gen.var(N.instancePath, _`""`)
@@ -85,6 +86,7 @@ function destructureValCxtES5(gen: CodeGen, opts: InstanceOptions): void {
       gen.var(N.parentDataProperty, _`undefined`)
       gen.var(N.rootData, N.data)
       if (opts.dynamicRef) gen.var(N.dynamicAnchors, _`{}`)
+      if (opts.traceIf) gen.var(N.trace, _`[]`)
     }
   )
 }

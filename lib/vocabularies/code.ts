@@ -86,6 +86,7 @@ export function callValidateCode(
     [N.rootData, N.rootData],
   ]
   if (it.opts.dynamicRef) valCxt.push([N.dynamicAnchors, N.dynamicAnchors])
+  if (it.opts.traceIf) valCxt.push([N.trace, N.trace])
   const args = _`${dataAndSchema}, ${gen.object(...valCxt)}`
   return context !== nil ? _`${func}.call(${context}, ${args})` : _`${func}(${args})`
 }

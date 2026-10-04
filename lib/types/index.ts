@@ -39,12 +39,20 @@ export interface SourceCode {
   evaluated?: Code
 }
 
+export interface IfTraceEntry {
+  schemaPath: string
+  instancePath: string
+  result: boolean
+  branch: "then" | "else"
+}
+
 export interface DataValidationCxt<T extends string | number = string | number> {
   instancePath: string
   parentData: {[K in T]: any} // object or array
   parentDataProperty: T // string or number
   rootData: Record<string, any> | any[]
   dynamicAnchors: {[Ref in string]?: ValidateFunction}
+  trace?: IfTraceEntry[]
 }
 
 export interface ValidateFunction<T = unknown> {

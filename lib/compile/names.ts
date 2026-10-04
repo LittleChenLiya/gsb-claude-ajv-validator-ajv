@@ -10,6 +10,7 @@ const names = {
   parentDataProperty: new Name("parentDataProperty"),
   rootData: new Name("rootData"), // root data - same as the data passed to the first/top validation function
   dynamicAnchors: new Name("dynamicAnchors"), // used to support recursiveRef and dynamicRef
+  trace: new Name("trace"), // per-validation buffer for if/then/else trace entries
   // function scoped variables
   vErrors: new Name("vErrors"), // null or array of validation errors
   errors: new Name("errors"), // counter of validation errors
