@@ -1,0 +1,8 @@
+{
+  "$id": "unknown-format.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "weird": {"type": "string", "format": "zz-not-a-real-format"}
+  }
+}

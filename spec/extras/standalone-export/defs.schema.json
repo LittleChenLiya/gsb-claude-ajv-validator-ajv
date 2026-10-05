@@ -1,0 +1,15 @@
+{
+  "$id": "defs.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Shared definitions used by both entry schemas",
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

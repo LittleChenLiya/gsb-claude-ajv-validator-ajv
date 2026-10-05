@@ -38,6 +38,11 @@ dist/
 # browser bundles
 bundle/
 
+# standalone validator package export test output
+.standalone-acceptance/
+.standalone-manual/
+.standalone-package/
+
 package-lock.json
 
 spec/_json/*.js

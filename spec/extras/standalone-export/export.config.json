@@ -1,0 +1,11 @@
+{
+  "ajvFormats": true,
+  "ajvOptions": {
+    "allErrors": true
+  },
+  "schemas": ["./defs.schema.json"],
+  "entries": [
+    {"name": "user", "schema": "./user.schema.json"},
+    {"name": "order", "schema": "./order.schema.json"}
+  ]
+}

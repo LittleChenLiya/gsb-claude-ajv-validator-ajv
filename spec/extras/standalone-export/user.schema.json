@@ -1,0 +1,15 @@
+{
+  "$id": "user.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "User entry: references the shared defs",
+  "type": "object",
+  "properties": {
+    "id": {"$ref": "defs.schema.json#/$defs/id"},
+    "name": {"$ref": "defs.schema.json#/$defs/nonEmptyString"},
+    "email": {"type": "string", "format": "email"},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "role": {"type": "string", "enum": ["admin", "member"], "default": "member"}
+  },
+  "required": ["id", "name", "email"],
+  "additionalProperties": false
+}

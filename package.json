@@ -28,6 +28,8 @@
     "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
     "test-ci": "AJV_FULL_TEST=true npm test",
     "prepublish": "npm run build",
+    "standalone:export": "node scripts/export-standalone.js",
+    "standalone:acceptance": "npm run build && node spec/extras/standalone-export/acceptance.js",
     "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
     "docs:dev": "./scripts/prepare-site && vuepress dev docs",
     "docs:build": "./scripts/prepare-site && vuepress build docs"
