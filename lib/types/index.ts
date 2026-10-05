@@ -39,12 +39,20 @@ export interface SourceCode {
   evaluated?: Code
 }
 
-export interface DataValidationCxt<T extends string | number = string | number> {
+export interface DataModEntry {
+  kind: "coerce" | "useDefaults" | "removeAdditional" | "modifying"
   instancePath: string
-  parentData: {[K in T]: any} // object or array
-  parentDataProperty: T // string or number
-  rootData: Record<string, any> | any[]
-  dynamicAnchors: {[Ref in string]?: ValidateFunction}
+  keyword: string
+  covered: boolean
+}
+
+export interface DataValidationCxt<T extends string | number = string | number> {
+  instancePath?: string
+  parentData?: {[K in T]: any} // object or array
+  parentDataProperty?: T // string or number
+  rootData?: Record<string, any> | any[]
+  dynamicAnchors?: {[Ref in string]?: ValidateFunction}
+  dataMods?: DataModEntry[]
 }
 
 export interface ValidateFunction<T = unknown> {

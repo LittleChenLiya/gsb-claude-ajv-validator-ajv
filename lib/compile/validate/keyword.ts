@@ -13,6 +13,7 @@ import N from "../names"
 import type {JSONType} from "../rules"
 import {callValidateCode} from "../../vocabularies/code"
 import {extendErrors} from "../errors"
+import {recordDataMod} from "../audit"
 
 type KeywordCompilationResult = AnySchema | SchemaValidateFunction | AnyValidateFunction
 
@@ -95,8 +96,11 @@ export function funcKeywordCode(cxt: KeywordCxt, def: FuncKeywordDefinition): vo
 }
 
 function modifyData(cxt: KeywordCxt): void {
-  const {gen, data, it} = cxt
+  const {gen, data, it, keyword} = cxt
   gen.if(it.parentData, () => gen.assign(data, _`${it.parentData}[${it.parentDataProperty}]`))
+  if (it.opts.auditDataMods) {
+    recordDataMod(gen, it, "modifying", keyword)
+  }
 }
 
 function addErrs(cxt: KeywordCxt, errs: Code): void {

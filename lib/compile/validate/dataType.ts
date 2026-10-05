@@ -10,6 +10,7 @@ import {schemaHasRulesForType} from "./applicability"
 import {reportError} from "../errors"
 import {_, nil, and, not, operators, Code, Name} from "../codegen"
 import {toHash, schemaRefOrVal} from "../util"
+import {recordDataMod} from "../audit"
 
 export enum DataType {
   Correct,
@@ -85,6 +86,9 @@ function coerceData(it: SchemaObjCxt, types: JSONType[], coerceTo: JSONType[]): 
   gen.if(_`${coerced} !== undefined`, () => {
     gen.assign(data, coerced)
     assignParentData(it, coerced)
+    if (opts.auditDataMods) {
+      recordDataMod(gen, it, "coerce", "type")
+    }
   })
 
   function coerceSpecificType(t: string): void {

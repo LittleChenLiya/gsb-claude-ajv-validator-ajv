@@ -10,6 +10,7 @@ import {_, nil, or, not, Code, Name} from "../../compile/codegen"
 import N from "../../compile/names"
 import type {SubschemaArgs} from "../../compile/validate/subschema"
 import {alwaysValidSchema, schemaRefOrVal, Type} from "../../compile/util"
+import {recordDataMod, keyInstancePath} from "../../compile/audit"
 
 export type AdditionalPropertiesError = ErrorObject<
   "additionalProperties",
@@ -67,6 +68,9 @@ const def: CodeKeywordDefinition & AddedKeywordDefinition = {
 
     function deleteAdditional(key: Name): void {
       gen.code(_`delete ${data}[${key}]`)
+      if (opts.auditDataMods) {
+        recordDataMod(gen, it, "removeAdditional", "additionalProperties", keyInstancePath(it, key))
+      }
     }
 
     function additionalPropertyCode(key: Name): void {

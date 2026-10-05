@@ -120,6 +120,8 @@ export interface CurrentOptions {
   removeAdditional?: boolean | "all" | "failing"
   useDefaults?: boolean | "empty"
   coerceTypes?: boolean | "array"
+  // audit: record actual data modifications (coerce/useDefaults/removeAdditional) in generated code
+  auditDataMods?: boolean
   // advanced options:
   next?: boolean // NEW
   unevaluated?: boolean // NEW

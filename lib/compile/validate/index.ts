@@ -66,18 +66,21 @@ function validateFunction(
 function destructureValCxt(opts: InstanceOptions): Code {
   return _`{${N.instancePath}="", ${N.parentData}, ${N.parentDataProperty}, ${N.rootData}=${
     N.data
-  }${opts.dynamicRef ? _`, ${N.dynamicAnchors}={}` : nil}}={}`
+  }${opts.dynamicRef ? _`, ${N.dynamicAnchors}={}` : nil}${
+    opts.auditDataMods ? _`, ${N.dataMods}` : nil
+  }}={}`
 }
 
 function destructureValCxtES5(gen: CodeGen, opts: InstanceOptions): void {
   gen.if(
     N.valCxt,
     () => {
-      gen.var(N.instancePath, _`${N.valCxt}.${N.instancePath}`)
+      gen.var(N.instancePath, _`${N.valCxt}.${N.instancePath} || ""`)
       gen.var(N.parentData, _`${N.valCxt}.${N.parentData}`)
       gen.var(N.parentDataProperty, _`${N.valCxt}.${N.parentDataProperty}`)
       gen.var(N.rootData, _`${N.valCxt}.${N.rootData}`)
       if (opts.dynamicRef) gen.var(N.dynamicAnchors, _`${N.valCxt}.${N.dynamicAnchors}`)
+      if (opts.auditDataMods) gen.var(N.dataMods, _`${N.valCxt}.${N.dataMods}`)
     },
     () => {
       gen.var(N.instancePath, _`""`)
@@ -85,6 +88,7 @@ function destructureValCxtES5(gen: CodeGen, opts: InstanceOptions): void {
       gen.var(N.parentDataProperty, _`undefined`)
       gen.var(N.rootData, N.data)
       if (opts.dynamicRef) gen.var(N.dynamicAnchors, _`{}`)
+      if (opts.auditDataMods) gen.var(N.dataMods, _`undefined`)
     }
   )
 }
@@ -97,10 +101,18 @@ function topSchemaObjCode(it: SchemaObjCxt): void {
     gen.let(N.vErrors, null)
     gen.let(N.errors, 0)
     if (opts.unevaluated) resetEvaluated(it)
+    if (opts.auditDataMods) initDataMods(it)
     typeAndKeywords(it)
     returnResults(it)
   })
   return
+}
+
+// Creates a fresh audit ledger when the validation context did not supply one.
+// Stored on the validate function for top-level convenience; concurrent calls
+// should pass valCxt.dataMods to get isolated buffers.
+function initDataMods({gen, validateName}: SchemaObjCxt): void {
+  gen.code(_`if (${N.dataMods} === undefined) ${N.dataMods} = ${validateName}.dataMods = []`)
 }
 
 function resetEvaluated(it: SchemaObjCxt): void {

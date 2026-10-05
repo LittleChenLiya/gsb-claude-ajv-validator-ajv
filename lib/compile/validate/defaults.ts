@@ -1,6 +1,7 @@
 import type {SchemaObjCxt} from ".."
 import {_, getProperty, stringify} from "../codegen"
 import {checkStrictMode} from "../util"
+import {recordDataMod, propInstancePath} from "../audit"
 
 export function assignDefaults(it: SchemaObjCxt, ty?: string): void {
   const {properties, items} = it.schema
@@ -28,5 +29,10 @@ function assignDefault(it: SchemaObjCxt, prop: string | number, defaultValue: un
   }
   // `${childData} === undefined` +
   // (opts.useDefaults === "empty" ? ` || ${childData} === null || ${childData} === ""` : "")
-  gen.if(condition, _`${childData} = ${stringify(defaultValue)}`)
+  gen.if(condition, () => {
+    gen.assign(childData, stringify(defaultValue))
+    if (opts.auditDataMods) {
+      recordDataMod(gen, it, "useDefaults", "default", propInstancePath(it, prop))
+    }
+  })
 }
