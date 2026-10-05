@@ -6,7 +6,7 @@ import {_, nil, _Code, Code, getProperty, getEsmExportName} from "../compile/cod
 
 function standaloneCode(
   ajv: AjvCore,
-  refsOrFunc?: {[K in string]?: string} | AnyValidateFunction
+  refsOrFunc?: {[K in string]?: string | AnyValidateFunction} | AnyValidateFunction
 ): string {
   if (!ajv.opts.code.source) {
     throw new Error("moduleCode: ajv instance must have code.source option")
@@ -15,7 +15,9 @@ function standaloneCode(
   return typeof refsOrFunc == "function"
     ? funcExportCode(refsOrFunc.source)
     : refsOrFunc !== undefined
-    ? multiExportsCode<string>(refsOrFunc, getValidate)
+    ? multiExportsCode<string | AnyValidateFunction>(refsOrFunc, (schOrId) =>
+        typeof schOrId === "function" ? schOrId : getValidate(schOrId)
+      )
     : multiExportsCode<SchemaEnv>(ajv.schemas, (sch) =>
         sch.meta ? undefined : ajv.compile(sch.schema)
       )
@@ -37,7 +39,7 @@ function standaloneCode(
     return `"use strict";${_n}module.exports = ${n};${_n}module.exports.default = ${n};${_n}${vCode}`
   }
 
-  function multiExportsCode<T extends SchemaEnv | string>(
+  function multiExportsCode<T extends SchemaEnv | string | AnyValidateFunction>(
     schemas: {[K in string]?: T},
     getValidateFunc: (schOrId: T) => AnyValidateFunction | undefined
   ): string {

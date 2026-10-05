@@ -253,3 +253,116 @@ const ajv = new Ajv({
 })
 
 If you only use formats from [ajv-formats](https://github.com/ajv-validator/ajv-formats) this option will be set by this package automatically.
+
+## Standalone package export
+
+Ajv can generate a complete standalone validator package — a directory containing entry modules, shared definitions, runtime helpers, and format dependencies, together with a `package.json` manifest. The generated package is self-contained: all internal imports are relative, so the whole directory can be moved to another location and loaded without rebuilding.
+
+### Generating a package
+
+```javascript
+const path = require("path")
+const Ajv = require("ajv")
+const standalonePackage = require("ajv/dist/standalone/package").default
+
+const ajv = new Ajv({code: {source: true}})
+ajv.addSchema({
+  $id: "user.json",
+  type: "object",
+  properties: {
+    name: {type: "string", minLength: 2},
+  },
+  required: ["name"],
+})
+
+standalonePackage(ajv, {
+  user: "user.json",
+}, {
+  outDir: path.join(__dirname, "validator-package"),
+})
+```
+
+The `standalonePackage` function accepts:
+
+- `ajv` — an Ajv instance with `code.source: true`.
+- `entries` — a map of export names to schema `$id`s (or compiled validate functions).
+- `options.outDir` — the output directory.
+- `options.esm` — set to `true` to generate ESM modules (default: `false`).
+- `options.package` — additional fields to merge into the generated `package.json`.
+
+### Package layout
+
+The generated package has the following structure:
+
+```
+validator-package/
+  package.json        # manifest listing entries, runtime helpers, and formats
+  defs.js             # shared definitions (all validators and schemas)
+  entries/
+    user.js           # entry module that re-exports the validator
+  formats/
+    <format-name>.js  # format definition modules (for function/object formats)
+  runtime/
+    <helper-name>.js  # runtime helper modules (copied from Ajv)
+```
+
+Each entry module requires the shared `defs.js` and re-exports the validator:
+
+```javascript
+"use strict";
+const defs = require("../defs");
+module.exports = defs["user"];
+module.exports.default = defs["user"];
+```
+
+### Package manifest
+
+The generated `package.json` is a complete manifest of the package contents:
+
+```json
+{
+  "name": "standalone-validator-package",
+  "version": "1.0.0",
+  "main": "defs.js",
+  "files": ["defs.js", "entries/", "formats/", "runtime/"],
+  "scripts": {
+    "validate": "node validate.js"
+  },
+  "entries": {
+    "user": "entries/user.js"
+  },
+  "runtime": {
+    "ucs2length": "runtime/ucs2length.js"
+  },
+  "formats": {}
+}
+```
+
+- `entries` — maps entry names to their module paths.
+- `runtime` — maps runtime helper names to their module paths.
+- `formats` — maps format names to their module paths.
+
+### Validation guarantees
+
+The package export performs all checks before writing any files (atomic writes):
+
+- **Unsupported custom keywords** — keywords defined with `compile`/`validate` functions (which cannot be inlined into generated code) are reported as unsupported before the package is written. Only `code` and `macro` keywords are supported.
+- **Unknown formats** — formats that are not registered with the Ajv instance prevent package generation.
+- **Missing references** — `$ref`s that cannot be resolved prevent package generation; no half-package is written.
+- **Filename collision prevention** — if two modules would have the same filename, a numeric suffix is added.
+
+The generated validation functions produce the same results as the original Ajv instance, including default value filling (`useDefaults`).
+
+### Using the generated package
+
+```javascript
+const user = require("./validator-package/entries/user")
+
+if (user({name: "John"})) {
+  console.log("valid")
+} else {
+  console.log("invalid:", user.errors)
+}
+```
+
+The package can be moved to another directory or machine and loaded without rebuilding, as long as its external dependencies (listed in `package.json`) are available.
