@@ -86,6 +86,9 @@ export function callValidateCode(
     [N.rootData, N.rootData],
   ]
   if (it.opts.dynamicRef) valCxt.push([N.dynamicAnchors, N.dynamicAnchors])
+  // pass the current call's trace buffer to the referenced validation function so
+  // if/then/else branches inside $ref'd schemas are recorded in the same trace
+  if (it.opts.traceBranches) valCxt.push([N.trace, N.trace])
   const args = _`${dataAndSchema}, ${gen.object(...valCxt)}`
   return context !== nil ? _`${func}.call(${context}, ${args})` : _`${func}(${args})`
 }

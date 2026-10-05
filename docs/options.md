@@ -35,6 +35,7 @@ const defaultOptions = {
   $data: false, // *
   allErrors: false,
   verbose: false,
+  traceBranches: false,
   discriminator: false, // *
   unicodeRegExp: true, // *
   timestamp: undefined // **
@@ -172,6 +173,47 @@ Check all rules collecting all errors. Default is to return after the first erro
 ### verbose
 
 Include the reference to the part of the schema (`schema` and `parentSchema`) and validated data in errors (false by default).
+
+### traceBranches
+
+Record an explicit execution trace of `if`/`then`/`else` keywords during validation (false by default, no trace code is generated unless enabled).
+
+With `traceBranches: true`, each time an `if` keyword is evaluated the generated validation function pushes one entry to a per-call trace buffer, right after the condition is evaluated and before the selected branch is validated. The entry records which condition was executed and which branch was selected - it is not derived by re-validating the data afterwards. Nested conditions are recorded separately, in execution order, and conditions inside `$ref`erenced schemas are recorded in the same trace.
+
+Each trace entry has the format:
+
+```typescript
+{
+  keyword: "if", // the keyword that was evaluated
+  schemaPath: string, // JSON pointer to the "if" keyword in the schema, e.g. "#/if" or "#/then/if"
+  instancePath: string, // JSON pointer to the validated instance location
+  condition: boolean, // the boolean result of evaluating the "if" schema
+  branch: "then" | "else" | "none", // the selected branch ("none" when no branch applies)
+}
+```
+
+The trace does not contain validated data values. Validation result (`valid`) and `errors` are not affected.
+
+After a synchronous validation the trace is available as `validate.trace`. Each validation call uses its own buffer, so concurrent (async) validations never share it; for async validation functions a caller-provided array can be passed via the data context (`validate(data, {trace: []})`) to collect the trace of that specific call.
+
+Example:
+
+```javascript
+const ajv = new Ajv({traceBranches: true})
+const validate = ajv.compile({
+  if: {properties: {kind: {const: "a"}}, required: ["kind"]},
+  then: {required: ["x"]},
+  else: {required: ["y"]},
+})
+
+validate({kind: "a"}) // false
+validate.trace
+// [{keyword: "if", schemaPath: "#/if", instancePath: "", condition: true, branch: "then"}]
+
+validate({kind: "b"}) // false
+validate.trace
+// [{keyword: "if", schemaPath: "#/if", instancePath: "", condition: false, branch: "else"}]
+```
 
 ### discriminator
 

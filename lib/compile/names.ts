@@ -13,6 +13,7 @@ const names = {
   // function scoped variables
   vErrors: new Name("vErrors"), // null or array of validation errors
   errors: new Name("errors"), // counter of validation errors
+  trace: new Name("trace"), // array of if/then/else branch trace entries (option traceBranches)
   this: new Name("this"),
   // "globals"
   self: new Name("self"),

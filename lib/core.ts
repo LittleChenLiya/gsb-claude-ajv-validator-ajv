@@ -18,6 +18,7 @@ export {
   AnyValidateFunction,
   ErrorObject,
   ErrorNoParams,
+  BranchTraceEntry,
 } from "./types"
 
 export {SchemaCxt, SchemaObjCxt} from "./compile"
@@ -102,6 +103,7 @@ export interface CurrentOptions {
   $data?: boolean
   allErrors?: boolean
   verbose?: boolean
+  traceBranches?: boolean // NEW: record if/then/else branch trace during validation
   discriminator?: boolean
   unicodeRegExp?: boolean
   timestamp?: "string" | "date" // JTD only

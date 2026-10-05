@@ -6,7 +6,8 @@ import type {
 } from "../../types"
 import type {SchemaObjCxt} from "../../compile"
 import type {KeywordCxt} from "../../compile/validate"
-import {_, str, not, Name} from "../../compile/codegen"
+import {_, str, not, strConcat, Name} from "../../compile/codegen"
+import N from "../../compile/names"
 import {alwaysValidSchema, checkStrictMode} from "../../compile/util"
 
 export type IfKeywordError = ErrorObject<"if", {failingKeyword: string}, AnySchema>
@@ -34,6 +35,7 @@ const def: CodeKeywordDefinition = {
     const schValid = gen.name("_valid")
     validateIf()
     cxt.reset()
+    if (it.opts.traceBranches) traceBranch()
 
     if (hasThen && hasElse) {
       const ifClause = gen.let("ifClause")
@@ -58,6 +60,23 @@ const def: CodeKeywordDefinition = {
         schValid
       )
       cxt.mergeEvaluated(schCxt)
+    }
+
+    // record an explicit trace entry for this if/then/else evaluation: the schema
+    // path of the "if" keyword, the instance path, the condition boolean result and
+    // the selected branch. The entry is pushed right after the condition is evaluated
+    // and before the selected branch, so nested conditions are recorded separately,
+    // in execution order. No validated data values are stored in the trace.
+    function traceBranch(): void {
+      const branch = hasThen
+        ? hasElse
+          ? _`${schValid} ? "then" : "else"`
+          : _`${schValid} ? "then" : "none"`
+        : _`${schValid} ? "none" : "else"`
+      const schemaPath = str`${it.errSchemaPath}/if`
+      const instancePath = strConcat(N.instancePath, it.errorPath)
+      const entry = _`{keyword: "if", schemaPath: ${schemaPath}, instancePath: ${instancePath}, condition: ${schValid}, branch: ${branch}}`
+      gen.code(_`${N.trace}.push(${entry});`)
     }
 
     function validateClause(keyword: string, ifClause?: Name): () => void {

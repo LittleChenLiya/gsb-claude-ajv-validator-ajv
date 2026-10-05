@@ -50,23 +50,34 @@ function validateFunction(
   {gen, validateName, schema, schemaEnv, opts}: SchemaCxt,
   body: Block
 ): void {
+  // per-call branch trace buffer: a caller-provided collector (via dataCxt) is used
+  // if present, otherwise a new local array is created for this validation call,
+  // so concurrent validations never share the trace buffer
+  const initTrace: Block = opts.traceBranches
+    ? () => gen.assign(N.trace, _`${N.trace} || []`)
+    : () => {}
   if (opts.code.es5) {
     gen.func(validateName, _`${N.data}, ${N.valCxt}`, schemaEnv.$async, () => {
       gen.code(_`"use strict"; ${funcSourceUrl(schema, opts)}`)
       destructureValCxtES5(gen, opts)
+      gen.code(initTrace)
       gen.code(body)
     })
   } else {
-    gen.func(validateName, _`${N.data}, ${destructureValCxt(opts)}`, schemaEnv.$async, () =>
-      gen.code(funcSourceUrl(schema, opts)).code(body)
-    )
+    gen.func(validateName, _`${N.data}, ${destructureValCxt(opts)}`, schemaEnv.$async, () => {
+      gen.code(funcSourceUrl(schema, opts))
+      gen.code(initTrace)
+      gen.code(body)
+    })
   }
 }
 
 function destructureValCxt(opts: InstanceOptions): Code {
   return _`{${N.instancePath}="", ${N.parentData}, ${N.parentDataProperty}, ${N.rootData}=${
     N.data
-  }${opts.dynamicRef ? _`, ${N.dynamicAnchors}={}` : nil}}={}`
+  }${opts.dynamicRef ? _`, ${N.dynamicAnchors}={}` : nil}${
+    opts.traceBranches ? _`, ${N.trace}` : nil
+  }}={}`
 }
 
 function destructureValCxtES5(gen: CodeGen, opts: InstanceOptions): void {
@@ -78,6 +89,7 @@ function destructureValCxtES5(gen: CodeGen, opts: InstanceOptions): void {
       gen.var(N.parentDataProperty, _`${N.valCxt}.${N.parentDataProperty}`)
       gen.var(N.rootData, _`${N.valCxt}.${N.rootData}`)
       if (opts.dynamicRef) gen.var(N.dynamicAnchors, _`${N.valCxt}.${N.dynamicAnchors}`)
+      if (opts.traceBranches) gen.var(N.trace, _`${N.valCxt}.${N.trace}`)
     },
     () => {
       gen.var(N.instancePath, _`""`)
@@ -85,6 +97,7 @@ function destructureValCxtES5(gen: CodeGen, opts: InstanceOptions): void {
       gen.var(N.parentDataProperty, _`undefined`)
       gen.var(N.rootData, N.data)
       if (opts.dynamicRef) gen.var(N.dynamicAnchors, _`{}`)
+      if (opts.traceBranches) gen.var(N.trace, _`undefined`)
     }
   )
 }
@@ -201,11 +214,18 @@ function returnResults(it: SchemaCxt): void {
     // TODO assign unevaluated
     gen.if(
       _`${N.errors} === 0`,
-      () => gen.return(N.data),
-      () => gen.throw(_`new ${ValidationError as Name}(${N.vErrors})`)
+      () => {
+        if (opts.traceBranches) gen.assign(_`${validateName}.trace`, N.trace)
+        gen.return(N.data)
+      },
+      () => {
+        if (opts.traceBranches) gen.assign(_`${validateName}.trace`, N.trace)
+        gen.throw(_`new ${ValidationError as Name}(${N.vErrors})`)
+      }
     )
   } else {
     gen.assign(_`${validateName}.errors`, N.vErrors)
+    if (opts.traceBranches) gen.assign(_`${validateName}.trace`, N.trace)
     if (opts.unevaluated) assignEvaluated(it)
     gen.return(_`${N.errors} === 0`)
   }

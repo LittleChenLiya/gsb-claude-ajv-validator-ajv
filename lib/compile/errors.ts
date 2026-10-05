@@ -100,9 +100,11 @@ function addError(gen: CodeGen, errObj: Code): void {
 function returnErrors(it: SchemaCxt, errs: Code): void {
   const {gen, validateName, schemaEnv} = it
   if (schemaEnv.$async) {
+    if (it.opts.traceBranches) gen.assign(_`${validateName}.trace`, N.trace)
     gen.throw(_`new ${it.ValidationError as Name}(${errs})`)
   } else {
     gen.assign(_`${validateName}.errors`, errs)
+    if (it.opts.traceBranches) gen.assign(_`${validateName}.trace`, N.trace)
     gen.return(false)
   }
 }

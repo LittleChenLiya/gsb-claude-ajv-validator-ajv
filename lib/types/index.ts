@@ -45,6 +45,20 @@ export interface DataValidationCxt<T extends string | number = string | number> 
   parentDataProperty: T // string or number
   rootData: Record<string, any> | any[]
   dynamicAnchors: {[Ref in string]?: ValidateFunction}
+  // optional caller-provided branch trace collector (used with option traceBranches).
+  // Each validation call uses its own buffer - concurrent validations never share it.
+  trace?: BranchTraceEntry[]
+}
+
+// Explicit execution trace entry recorded when an if/then/else keyword is evaluated
+// (only with option traceBranches). It captures which condition was executed and which
+// branch was selected, without re-validating the data and without storing data values.
+export interface BranchTraceEntry {
+  keyword: "if"
+  schemaPath: string // JSON pointer to the "if" keyword in the schema, e.g. "#/if"
+  instancePath: string // JSON pointer to the validated instance location
+  condition: boolean // the boolean result of evaluating the "if" schema
+  branch: "then" | "else" | "none" // the selected branch ("none" when no branch applies)
 }
 
 export interface ValidateFunction<T = unknown> {
@@ -52,6 +66,7 @@ export interface ValidateFunction<T = unknown> {
   (this: Ajv | any, data: any, dataCxt?: DataValidationCxt): data is T
   errors?: null | ErrorObject[]
   evaluated?: Evaluated
+  trace?: BranchTraceEntry[]
   schema: AnySchema
   schemaEnv: SchemaEnv
   source?: SourceCode
