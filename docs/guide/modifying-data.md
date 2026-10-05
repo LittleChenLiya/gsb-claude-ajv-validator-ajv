@@ -269,3 +269,47 @@ console.log(data) // { "foo": [1], "bar": false }
 The coercion rules, as you can see from the example, are different from JavaScript both to validate user input as expected and to have the coercion reversible (to correctly validate cases where different types are defined in subschemas of "anyOf" and other compound keywords).
 
 See [Type coercion rules](../coercion.md) for details.
+
+## Auditing data modifications
+
+With the option `modificationAudit` the generated validation function explicitly records every data modification it actually applies via `coerceTypes`, `useDefaults` and `removeAdditional`. Each record contains the source keyword and the data location (JSON Pointer) - original values are never stored. The records are collected in a buffer that is created per validation call (so concurrent validations, including asynchronous ones, never share a buffer) and exposed as `validate.modifications` after the call - including the modifications that were applied before a validation failure.
+
+The audit does not re-validate data and does not call any (custom) keywords - it only logs the modifications the generated code performs anyway, so validation semantics, data side effects and the number of user callback invocations are unchanged. Data changes made by custom keywords declared with `modifying: true` are NOT covered by the audit; when the schema uses such keywords `validate.modificationsUncovered` is set to `true`.
+
+Example (two fields - coerced `id` and removed `extra`):
+
+```javascript
+const ajv = new Ajv({
+  coerceTypes: true,
+  removeAdditional: true,
+  useDefaults: true,
+  modificationAudit: true,
+})
+const schema = {
+  type: "object",
+  properties: {
+    id: {type: "integer"},
+    name: {type: "string", default: "anonymous"},
+  },
+  additionalProperties: false,
+}
+
+const data = {id: "12", extra: true}
+const validate = ajv.compile(schema)
+
+console.log(validate(data)) // true
+console.log(data) // { id: 12, name: "anonymous" }
+console.log(validate.modifications)
+// [
+//   { keyword: "useDefaults", instancePath: "/name", propertyName: "name" },
+//   { keyword: "removeAdditional", instancePath: "/extra", propertyName: "extra" },
+//   { keyword: "coerce", instancePath: "/id" },
+// ]
+```
+
+To keep concurrent (e.g. asynchronous) validations fully isolated, a caller-provided buffer can be passed via the data context - records of that call are pushed there instead:
+
+```javascript
+const buffer = []
+await validate(data, {modifications: buffer})
+```

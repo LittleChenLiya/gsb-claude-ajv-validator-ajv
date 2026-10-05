@@ -32,6 +32,7 @@ import {
   reportExtraError,
   resetErrorsCount,
   keyword$DataError,
+  exposeModifications,
 } from "../errors"
 
 // schema compilation - generates validation function, subschemaCode (below) is used for subschemas
@@ -66,7 +67,11 @@ function validateFunction(
 function destructureValCxt(opts: InstanceOptions): Code {
   return _`{${N.instancePath}="", ${N.parentData}, ${N.parentDataProperty}, ${N.rootData}=${
     N.data
-  }${opts.dynamicRef ? _`, ${N.dynamicAnchors}={}` : nil}}={}`
+  }${opts.dynamicRef ? _`, ${N.dynamicAnchors}={}` : nil}${
+    // a fresh audit buffer per validation call keeps concurrent calls isolated;
+    // a caller-provided buffer (dataCxt.modifications) is used instead when passed
+    opts.modificationAudit ? _`, ${N.modifications}=[]` : nil
+  }}={}`
 }
 
 function destructureValCxtES5(gen: CodeGen, opts: InstanceOptions): void {
@@ -78,6 +83,9 @@ function destructureValCxtES5(gen: CodeGen, opts: InstanceOptions): void {
       gen.var(N.parentDataProperty, _`${N.valCxt}.${N.parentDataProperty}`)
       gen.var(N.rootData, _`${N.valCxt}.${N.rootData}`)
       if (opts.dynamicRef) gen.var(N.dynamicAnchors, _`${N.valCxt}.${N.dynamicAnchors}`)
+      if (opts.modificationAudit) {
+        gen.var(N.modifications, _`${N.valCxt}.${N.modifications} || []`)
+      }
     },
     () => {
       gen.var(N.instancePath, _`""`)
@@ -85,6 +93,7 @@ function destructureValCxtES5(gen: CodeGen, opts: InstanceOptions): void {
       gen.var(N.parentDataProperty, _`undefined`)
       gen.var(N.rootData, N.data)
       if (opts.dynamicRef) gen.var(N.dynamicAnchors, _`{}`)
+      if (opts.modificationAudit) gen.var(N.modifications, _`[]`)
     }
   )
 }
@@ -197,6 +206,7 @@ function commentKeyword({gen, schemaEnv, schema, errSchemaPath, opts}: SchemaObj
 
 function returnResults(it: SchemaCxt): void {
   const {gen, schemaEnv, validateName, ValidationError, opts} = it
+  if (opts.modificationAudit) exposeModifications(it)
   if (schemaEnv.$async) {
     // TODO assign unevaluated
     gen.if(
@@ -527,6 +537,11 @@ function keywordCode(
   def: AddedKeywordDefinition,
   ruleType?: JSONType
 ): void {
+  if ("modifying" in def && def.modifying && it.opts.modificationAudit) {
+    // data changes made by custom keywords declared as `modifying` are not
+    // covered by the modification audit - mark it on the compiled validate
+    it.schemaEnv.modificationsUncovered = true
+  }
   const cxt = new KeywordCxt(it, def, keyword)
   if ("code" in def) {
     def.code(cxt, ruleType)

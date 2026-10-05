@@ -84,6 +84,9 @@ export class SchemaEnv implements SchemaEnvArgs {
   readonly dynamicAnchors: {[Ref in string]?: true} = {}
   validate?: AnyValidateFunction
   validateName?: ValueScopeName
+  // set during compilation when the schema uses custom keywords declared as
+  // `modifying` - their data changes are not covered by the modification audit
+  modificationsUncovered?: boolean
   serialize?: (data: unknown) => string
   serializeName?: ValueScopeName
   parse?: (data: string) => unknown

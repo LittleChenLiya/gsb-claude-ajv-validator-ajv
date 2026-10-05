@@ -45,6 +45,21 @@ export interface DataValidationCxt<T extends string | number = string | number> 
   parentDataProperty: T // string or number
   rootData: Record<string, any> | any[]
   dynamicAnchors: {[Ref in string]?: ValidateFunction}
+  // optional caller-provided audit buffer (option modificationAudit) - when passed,
+  // modification records of this validation call are pushed here instead of a
+  // call-created buffer, which keeps concurrent validations fully isolated
+  modifications?: ModificationRecord[]
+}
+
+// a record of one data modification actually applied during validation
+// (option modificationAudit). Original (pre-modification) values are never stored.
+export interface ModificationRecord {
+  // the source of the applied data modification
+  keyword: "coerce" | "useDefaults" | "removeAdditional"
+  // JSON Pointer to the data location where the modification was applied
+  instancePath: string
+  // the assigned/removed property name (or item index), when applicable
+  propertyName?: string | number
 }
 
 export interface ValidateFunction<T = unknown> {
@@ -52,6 +67,12 @@ export interface ValidateFunction<T = unknown> {
   (this: Ajv | any, data: any, dataCxt?: DataValidationCxt): data is T
   errors?: null | ErrorObject[]
   evaluated?: Evaluated
+  // populated after the call when option modificationAudit is used (even if
+  // validation failed) with the modifications that were actually applied to data
+  modifications?: ModificationRecord[] | null
+  // true when the schema uses custom keywords declared with `modifying: true` -
+  // data changes made by such keywords are NOT covered by the modifications audit
+  modificationsUncovered?: boolean
   schema: AnySchema
   schemaEnv: SchemaEnv
   source?: SourceCode

@@ -99,11 +99,21 @@ function addError(gen: CodeGen, errObj: Code): void {
 
 function returnErrors(it: SchemaCxt, errs: Code): void {
   const {gen, validateName, schemaEnv} = it
+  if (it.opts.modificationAudit) exposeModifications(it)
   if (schemaEnv.$async) {
     gen.throw(_`new ${it.ValidationError as Name}(${errs})`)
   } else {
     gen.assign(_`${validateName}.errors`, errs)
     gen.return(false)
+  }
+}
+
+// expose the per-call audit buffer on the validation function (like `errors`);
+// modifications applied before a validation failure are preserved as well
+export function exposeModifications({gen, schemaEnv, validateName}: SchemaCxt): void {
+  gen.assign(_`${validateName}.modifications`, N.modifications)
+  if (schemaEnv.modificationsUncovered) {
+    gen.assign(_`${validateName}.modificationsUncovered`, true)
   }
 }
 

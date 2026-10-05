@@ -120,6 +120,10 @@ export interface CurrentOptions {
   removeAdditional?: boolean | "all" | "failing"
   useDefaults?: boolean | "empty"
   coerceTypes?: boolean | "array"
+  // audit of data modifications actually applied by the options above:
+  // generated code records each applied modification (location and source keyword)
+  // into a per-call buffer exposed as validate.modifications (no values are stored)
+  modificationAudit?: boolean
   // advanced options:
   next?: boolean // NEW
   unevaluated?: boolean // NEW

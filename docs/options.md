@@ -301,6 +301,15 @@ Option values:
 - `true` - coerce scalar data types.
 - `"array"` - in addition to coercions between scalar types, coerce scalar data to an array with one element and vice versa (as required by the schema).
 
+### modificationAudit
+
+Record the data modifications actually applied by `coerceTypes`, `useDefaults` and `removeAdditional` - see [Auditing data modifications](./guide/modifying-data.md#auditing-data-modifications).
+
+Option values:
+
+- `false` (default) - no audit (generated validation code is unchanged).
+- `true` - the generated validation function records each applied modification (source keyword and data location, never the original value) into a per-call buffer exposed as `validate.modifications` after the call.
+
 ## Advanced options
 
 ### meta

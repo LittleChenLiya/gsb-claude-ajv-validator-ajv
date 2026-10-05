@@ -7,6 +7,7 @@ import type {
 import type {SchemaObjCxt} from ".."
 import {isJSONType, JSONType} from "../rules"
 import {schemaHasRulesForType} from "./applicability"
+import {recordModification} from "./modifications"
 import {reportError} from "../errors"
 import {_, nil, and, not, operators, Code, Name} from "../codegen"
 import {toHash, schemaRefOrVal} from "../util"
@@ -85,6 +86,7 @@ function coerceData(it: SchemaObjCxt, types: JSONType[], coerceTo: JSONType[]): 
   gen.if(_`${coerced} !== undefined`, () => {
     gen.assign(data, coerced)
     assignParentData(it, coerced)
+    recordModification(it, "coerce")
   })
 
   function coerceSpecificType(t: string): void {

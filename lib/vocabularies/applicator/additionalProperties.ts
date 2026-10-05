@@ -9,6 +9,7 @@ import {allSchemaProperties, usePattern, isOwnProperty} from "../code"
 import {_, nil, or, not, Code, Name} from "../../compile/codegen"
 import N from "../../compile/names"
 import type {SubschemaArgs} from "../../compile/validate/subschema"
+import {recordModification} from "../../compile/validate/modifications"
 import {alwaysValidSchema, schemaRefOrVal, Type} from "../../compile/util"
 
 export type AdditionalPropertiesError = ErrorObject<
@@ -67,6 +68,7 @@ const def: CodeKeywordDefinition & AddedKeywordDefinition = {
 
     function deleteAdditional(key: Name): void {
       gen.code(_`delete ${data}[${key}]`)
+      recordModification(it, "removeAdditional", key, Type.Str)
     }
 
     function additionalPropertyCode(key: Name): void {
